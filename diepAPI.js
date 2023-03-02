@@ -268,22 +268,24 @@
                 });
             }
             static hookGrid(squareSize, cb) {
-                let vertices = [];
-                const onGrid = (ctx) => {
-                    cb(vertices, ctx);
-                };
-                CanvasKit.hookCtx('beginPath', (target, thisArg, args) => {
-                    vertices = [];
-                });
-                CanvasKit.hookCtx('moveTo', (target, thisArg, args) => {
-                    const x = Math.round(args[0] / squareSize) * squareSize;
-                    const y = Math.round(args[1] / squareSize) * squareSize;
-                    vertices.push(new Vector(x, y));
-                });
-                CanvasKit.hookCtx('fill', (target, thisArg, args) => {
-                    onGrid(thisArg);
-                });
-            }
+                const squares = [];
+              
+                const width = cb.canvas.width;
+                const height = cb.canvas.height;
+              
+                for (let x = 0; x < width; x += squareSize) {
+                  for (let y = 0; y < height; y += squareSize) {
+                    squares.push({
+                      x: x,
+                      y: y,
+                      width: squareSize,
+                      height: squareSize,
+                    });
+                  }
+                }
+
+              return squares;
+            }              
         } // CONCATENATED MODULE: ./src/core/event_emitter.ts
 
         class EventEmitter extends EventTarget {
