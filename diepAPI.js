@@ -267,6 +267,23 @@
                     index = 0;
                 });
             }
+            static hookGrid(squareSize, cb) {
+                let vertices = [];
+                const onGrid = (ctx) => {
+                    cb(vertices, ctx);
+                };
+                CanvasKit.hookCtx('beginPath', (target, thisArg, args) => {
+                    vertices = [];
+                });
+                CanvasKit.hookCtx('moveTo', (target, thisArg, args) => {
+                    const x = Math.round(args[0] / squareSize) * squareSize;
+                    const y = Math.round(args[1] / squareSize) * squareSize;
+                    vertices.push(new Vector(x, y));
+                });
+                CanvasKit.hookCtx('fill', (target, thisArg, args) => {
+                    onGrid(thisArg);
+                });
+            }
         } // CONCATENATED MODULE: ./src/core/event_emitter.ts
 
         class EventEmitter extends EventTarget {
