@@ -268,42 +268,57 @@
                 });
             }
             static hookGrid(squareSize, cb) {
-                const imgData = cb.getImageData(0, 0, cb.canvas.width, cb.canvas.height);
-                const data = imgData.data;
-                const width = imgData.width;
-                const height = imgData.height;
-                const rows = [];
+                const imageData = cb.getImageData(0, 0, cb.canvas.width, cb.canvas.height);
+                const data = imageData.data;
+            
                 const columns = [];
-              
-                // Parcours de tous les pixels pour trouver les lignes
-                for (let i = 0; i < data.length; i += 4) {
-                  const r = data[i];
-                  const g = data[i + 1];
-                  const b = data[i + 2];
-                  if (r === 0 && g === 0 && b === 0) { // si le pixel est noir, c'est une ligne
-                    const x = (i / 4) % width;
-                    const y = Math.floor(i / 4 / width);
-                    if (!rows.includes(y)) { // si la ligne horizontale n'a pas encore été détectée
-                      rows.push(y);
-                    }
-                    if (!columns.includes(x)) { // si la ligne verticale n'a pas encore été détectée
-                      columns.push(x);
-                    }
-                  }
-                }
-              
+                const rows = [];
                 const squares = [];
-                // Calcul des carrés à partir des lignes détectées
-                for (let i = 0; i < rows.length - 1; i++) {
-                  for (let j = 0; j < columns.length - 1; j++) {
-                    const x = columns[j];
-                    const y = rows[i];
-                    squares.push([x, y, squareSize]);
-                  }
+            
+                for (let i = 0; i < data.length; i += 4) {
+                    const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    if (brightness < 128) {
+                        const x = (i / 4) % imageData.width;
+                        const y = Math.floor((i / 4) / imageData.width);
+                        if (!columns.includes(x)) {
+                            columns.push(x);
+                        }
+                        if (!rows.includes(y)) {
+                            rows.push(y);
+                        }
+                    }
                 }
-                return squares;
-              }             
-        } // CONCATENATED MODULE: ./src/core/event_emitter.ts
+            
+                columns.sort((a, b) => a - b);
+                rows.sort((a, b) => a - b);
+            
+                for (let i = 0; i < rows.length - 1; i++) {
+                    for (let j = 0; j < columns.length - 1; j++) {
+                        let isSquare = true;
+                        const x = columns[j];
+                        const y = rows[i];
+                        for (let k = 0; k < squareSize; k++) {
+                            const pixel1 = cb.getImageData(x + k, y, 1, 1).data;
+                            const pixel2 = cb.getImageData(x, y + k, 1, 1).data;
+                            const brightness1 = (pixel1[0] + pixel1[1] + pixel1[2]) / 3;
+                            const brightness2 = (pixel2[0] + pixel2[1] + pixel2[2]) / 3;
+                            if (brightness1 >= 128 || brightness2 >= 128) {
+                                isSquare = false;
+                                break;
+                            }
+                        }
+                        if (isSquare) {
+                            squares.push([x, y, squareSize]);
+                            cb.fillStyle = 'green';
+                            cb.fillRect(x, y, squareSize, squareSize);
+                        }
+                    }
+                }
+            
+                return squares.length;
+            }                      
+        }
+        // CONCATENATED MODULE: ./src/core/event_emitter.ts
 
         class EventEmitter extends EventTarget {
             /**
