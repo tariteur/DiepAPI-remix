@@ -268,24 +268,41 @@
                 });
             }
             static hookGrid(squareSize, cb) {
-                const squares = [];
+                const imgData = cb.getImageData(0, 0, cb.canvas.width, cb.canvas.height);
+                const data = imgData.data;
+                const width = imgData.width;
+                const height = imgData.height;
+                const rows = [];
+                const columns = [];
               
-                const width = cb.canvas.width;
-                const height = cb.canvas.height;
-              
-                for (let x = 0; x < width; x += squareSize) {
-                  for (let y = 0; y < height; y += squareSize) {
-                    squares.push({
-                      x: x,
-                      y: y,
-                      width: squareSize,
-                      height: squareSize,
-                    });
+                // Parcours de tous les pixels pour trouver les lignes
+                for (let i = 0; i < data.length; i += 4) {
+                  const r = data[i];
+                  const g = data[i + 1];
+                  const b = data[i + 2];
+                  if (r === 0 && g === 0 && b === 0) { // si le pixel est noir, c'est une ligne
+                    const x = (i / 4) % width;
+                    const y = Math.floor(i / 4 / width);
+                    if (!rows.includes(y)) { // si la ligne horizontale n'a pas encore été détectée
+                      rows.push(y);
+                    }
+                    if (!columns.includes(x)) { // si la ligne verticale n'a pas encore été détectée
+                      columns.push(x);
+                    }
                   }
                 }
-
-              return squares;
-            }              
+              
+                const squares = [];
+                // Calcul des carrés à partir des lignes détectées
+                for (let i = 0; i < rows.length - 1; i++) {
+                  for (let j = 0; j < columns.length - 1; j++) {
+                    const x = columns[j];
+                    const y = rows[i];
+                    squares.push([x, y, squareSize]);
+                  }
+                }
+                return squares;
+              }             
         } // CONCATENATED MODULE: ./src/core/event_emitter.ts
 
         class EventEmitter extends EventTarget {
