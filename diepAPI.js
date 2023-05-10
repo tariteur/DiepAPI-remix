@@ -1375,7 +1375,7 @@
                     position = scaling.toArenaPos(position);
                     radius = scaling.toArenaUnits(new Vector(radius, radius)).x;
                     let type = EntityType.UNKNOWN;
-                    if (radius > 53) {
+                    if (radius > 45) {
                         type = EntityType.Player;
                     } else {
                         type = EntityType.Bullet;
