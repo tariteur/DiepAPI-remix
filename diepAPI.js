@@ -270,11 +270,11 @@
             static hookGrid(squareSize, cb) {
                 const imageData = cb.getImageData(0, 0, cb.canvas.width, cb.canvas.height);
                 const data = imageData.data;
-            
+
                 const columns = [];
                 const rows = [];
                 const squares = [];
-            
+
                 for (let i = 0; i < data.length; i += 4) {
                     const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
                     if (brightness < 128) {
@@ -288,10 +288,10 @@
                         }
                     }
                 }
-            
+
                 columns.sort((a, b) => a - b);
                 rows.sort((a, b) => a - b);
-            
+
                 for (let i = 0; i < rows.length - 1; i++) {
                     for (let j = 0; j < columns.length - 1; j++) {
                         let isSquare = true;
@@ -314,9 +314,9 @@
                         }
                     }
                 }
-            
+
                 return squares.length;
-            }                      
+            }
         }
         // CONCATENATED MODULE: ./src/core/event_emitter.ts
 
@@ -792,14 +792,14 @@
 
         class Movement {
             #position = new Vector(0, 0);
-            #velocity = new Vector(0, 0);
+            velocity = new Vector(0, 0);
             /*
              * used for average velocity calculation
              */
-            #velocitySamplesSize = 10;
-            #velocitySamples = [];
-            #velocitySamplesIndex = 0;
-            #velocityLastNow = performance.now();
+            velocitySamplesSize = 10;
+            velocitySamples = [];
+            velocitySamplesIndex = 0;
+            velocityLastNow = performance.now();
             get position() {
                 return this.#position;
             }
@@ -807,15 +807,15 @@
              * Velocity in [diep_]units / second
              */
             get velocity() {
-                return this.#velocity;
+                return this.velocity;
             }
             /**
              * Predict where this object will be after `time`
              * @param time The time in ms.
              */
             predictPos(time) {
-                const duration = (time + performance.now() - this.#velocityLastNow) / 1000;
-                return Vector.add(this.#position, Vector.scale(duration, this.#velocity));
+                const duration = (time + performance.now() - this.velocityLastNow) / 1000;
+                return Vector.add(this.#position, Vector.scale(duration, this.velocity));
             }
             updatePos(newPos) {
                 this.#updateVelocity(newPos);
@@ -823,17 +823,17 @@
             }
             #updateVelocity(newPos) {
                 const now = performance.now();
-                const time = (now - this.#velocityLastNow) / 1000;
+                const time = (now - this.velocityLastNow) / 1000;
                 if (time === 0) return;
-                this.#velocityLastNow = now;
+                this.velocityLastNow = now;
                 const velocity = Vector.unscale(time, Vector.subtract(newPos, this.#position));
                 // add current velocity to our samples array
-                this.#velocitySamples[this.#velocitySamplesIndex++] = velocity;
-                this.#velocitySamplesIndex %= this.#velocitySamplesSize;
+                this.velocitySamples[this.velocitySamplesIndex++] = velocity;
+                this.velocitySamplesIndex %= this.velocitySamplesSize;
                 // calculate the average velocity
-                this.#velocity = Vector.unscale(
-                    this.#velocitySamples.length,
-                    this.#velocitySamples.reduce((acc, x) => Vector.add(acc, x))
+                this.velocity = Vector.unscale(
+                    this.velocitySamples.length,
+                    this.velocitySamples.reduce((acc, x) => Vector.add(acc, x))
                 );
             }
         } // CONCATENATED MODULE: ./src/apis/player_movement.ts
@@ -1202,13 +1202,15 @@
          * To access the entities the EntityManager exposes the EntityManager.entities field.
          */
         class EntityManager extends Extension {
-            #entities = [];
-            #entitiesLastFrame = this.#entities;
+            entities = [];
+            entitiesLastFrame = this.entities;
             constructor() {
                 super(() => {
                     game.on('frame_end', () => {
-                        this.#entitiesLastFrame = this.#entities;
-                        this.#entities = [];
+                        if(this.entities.length < 1)
+                            return;
+                        this.entitiesLastFrame = this.entities;
+                        this.entities = [];
                     });
                     this.#triangleHook();
                     this.#squareHook();
@@ -1219,22 +1221,22 @@
                 });
             }
             get entities() {
-                return this.#entities;
+                return this.entities;
             }
             /**
              *
              * @returns The own player entity
              */
             getPlayer() {
-                const player = this.#entities.filter(
+                const player = this.entities.filter(
                     (entity) => entity.type == EntityType.Player && Vector.distance(entity.position, playerMovement.position) < 28
                 );
                 return player[0];
             }
             /**
-             * Adds the entity to `#entities`.
+             * Adds the entity to `entities`.
              *
-             * Will either find the entity in `#entitiesLastFrame` or create a new `Entity`.
+             * Will either find the entity in `entitiesLastFrame` or create a new `Entity`.
              */
             #add(type, position, extras = {}) {
                 let entity = this.#findEntity(type, position);
@@ -1249,7 +1251,7 @@
                 //TODO: remove radius from extras
                 entity.extras.radius = extras.radius;
                 entity.updatePos(position);
-                this.#entities.push(entity);
+                this.entities.push(entity);
             }
             /**
              * If an entity is newly created, try to find it's parent entity.
@@ -1261,13 +1263,13 @@
                 }
             }
             /**
-             * Searches `#entitiesLastFrame` for the entity that is closest to `position`
+             * Searches `entitiesLastFrame` for the entity that is closest to `position`
              * @returns the entity or null if there is no match.
              */
             #findEntity(type, position, tolerance = 42) {
                 let result = null;
                 let shortestDistance = Infinity;
-                this.#entitiesLastFrame.forEach((entity, i) => {
+                this.entitiesLastFrame.forEach((entity, i) => {
                     if (entity.type !== type) return;
                     const distance = Vector.distance(entity.position, position);
                     if (distance < shortestDistance) {
@@ -1375,7 +1377,7 @@
                     position = scaling.toArenaPos(position);
                     radius = scaling.toArenaUnits(new Vector(radius, radius)).x;
                     let type = EntityType.UNKNOWN;
-                    if (radius > 53) {
+                    if (radius > 45) {
                         type = EntityType.Player;
                     } else {
                         type = EntityType.Bullet;
